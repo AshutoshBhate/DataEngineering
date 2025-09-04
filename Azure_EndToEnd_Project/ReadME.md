@@ -112,14 +112,36 @@ graph LR
 
 Here are some snapshots of the key components of the project running in Databricks.
 
-**1. End-to-End Job Orchestration**
-*This image shows the directed acyclic graph (DAG) of the entire pipeline, with tasks for each layer and their dependencies.*
+* **End-to-End Job Orchestration:**
+*This image shows the directed acyclic graph (DAG) of the entire pipeline, with tasks for each layer and their dependencies*
 ![Databricks Job Workflow](./assets/databricks_job_dag.png)
 
-**2. Delta Live Tables (DLT) Pipeline**
-*This is an example of a DLT pipeline graph used for developing the Gold layer tables.*
+* **Delta Live Tables (DLT) Pipeline:**
+*This is an example of a DLT pipeline graph used for developing the Gold layer tables*
 ![DLT Pipeline](./assets/dlt_pipeline_graph.png)
 
-**3. Final Star Schema in Catalog Explorer**
-*The final dimension and fact tables are registered in Unity Catalog and ready for consumption.*
+* **Final Star Schema in Catalog Explorer:**
+*The final dimension and fact tables are registered in Unity Catalog and ready for consumption*
 ![Final Gold Tables](./assets/catalog_explorer_gold_tables.png)
+
+---
+
+## Setup and Execution
+**1. Prerequisites:**
+
+* An Azure account with an active subscription.
+* An Azure Databricks workspace configured with Unity Catalog.
+* Appropriate permissions to create and manage clusters, jobs, and ADLS Gen2 storage.
+
+**2. Configuration:**
+
+* Clone this repository to your Databricks workspace.
+* Update the notebooks/parameters.ipynb notebook to define the file paths for your ADLS Gen2 storage container and catalog/schema names.
+
+**3. Data Ingestion:**
+
+* Upload the files from the sample_data directory to your designated source location in ADLS Gen2.
+
+**4. Execution:**
+
+* Execute the notebooks manually in order to materialize the tables for the first time.
