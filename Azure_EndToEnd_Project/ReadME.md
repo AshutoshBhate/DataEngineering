@@ -18,9 +18,10 @@ The pipeline leverages modern data engineering practices, including incremental 
 * **Cloud Platform**: Microsoft Azure
 * **Data Lake**: Azure Data Lake Storage (ADLS) Gen2
 * **Processing Engine**: Azure Databricks, Apache Spark (PySpark)
-* **Data Format**: Delta Lake
+* **Data Format**: Parquet (Bronze), Delta Lake (Silver and Gold)
 * **Ingestion**: Databricks Autoloader, Spark Structured Streaming
-* **Orchestration**: Databricks Jobs, Delta Live Tables
+* **Orchestration**: Databricks Jobs
+* **Declarative Pipeline**: Delta Live Tables, for the product dimension
 * **Governance**: Unity Catalog
 
 ---
@@ -37,8 +38,8 @@ graph LR
     SilverCustomers["Silver_Customers"]
     SilverProducts["Silver_Products"]
     SilverOrders["Silver_Orders"]
-    DimCustomers["Dim_Customers (SCD Type 2)"]
-    DimProducts["Dim_Products (SCD Type 1)"]
+    DimCustomers["Dim_Customers (SCD Type 1)"]
+    DimProducts["Dim_Products (SCD Type 2)"]
     FactOrders["Fact_Orders"]
     BI["BI Tools / Analytics"]
 
@@ -57,7 +58,7 @@ graph LR
         SilverOrders
     end
 
-    subgraph "Gold Layer (Business Aggregates)"
+    subgraph "Gold Layer (Star Schema)"
         DimCustomers
         DimProducts
         FactOrders
@@ -99,12 +100,12 @@ graph LR
 
 ## Key Features
 
-* **Medallion Architecture**: Segregates data into Bronze (raw), Silver (cleaned), and Gold (aggregated) layers.
+* **Medallion Architecture**: Segregates data into Bronze (raw), Silver (cleaned), and Gold (modelled as a star schema) layers.
 * **Incremental Ingestion**: Uses Autoloader to efficiently process only new data, avoiding full re-scans.
-* **Slowly Changing Dimensions**: Implements SCD Type 1 (overwrite) and Type 2 (historical tracking) for dimension tables.
+* **Slowly Changing Dimensions**: Customers use SCD Type 1 (overwrite, with a Delta MERGE); products use SCD Type 2 (historical tracking, with Delta Live Tables).
 * **Star Schema Modeling**: Creates optimized dimension and fact tables in the Gold layer for fast analytical queries.
 * **Automated Orchestration**: Utilizes Databricks Jobs to define dependencies and automate the end-to-end workflow.
-* **Schema Enforcement & Evolution**: Leverages Delta Lake's capabilities to ensure data quality and handle schema changes over time.
+* **Schema Handling & Data Quality**: Auto Loader infers and stores each source's schema and keeps values that don't fit in a `_rescued_data` column; Delta Lake rejects writes whose schema doesn't match the table; Delta Live Tables expectations drop products without an ID or a name.
 
 ---
 
@@ -117,7 +118,7 @@ Here are some snapshots of the key components of the project running in Databric
 ![Databricks Job Workflow](./assets/databricks_job_dag.png)
 
 * **Delta Live Tables (DLT) Pipeline:**
-*This is an example of a DLT pipeline graph used for developing the Gold layer tables*
+*This is the DLT pipeline that builds the product dimension (SCD Type 2) in the Gold layer*
 ![DLT Pipeline](./assets/dlt_pipeline_graph.png)
 
 * **Final Star Schema in Catalog Explorer:**
@@ -132,16 +133,17 @@ Here are some snapshots of the key components of the project running in Databric
 * An Azure account with an active subscription.
 * An Azure Databricks workspace configured with Unity Catalog.
 * Appropriate permissions to create and manage clusters, jobs, and ADLS Gen2 storage.
+* An Access Connector for Azure Databricks with access to the storage account, and Unity Catalog external locations for its containers.
 
 **2. Configuration:**
 
 * Clone this repository to your Databricks workspace.
-* Update the notebooks/parameters.ipynb notebook to define the file paths for your ADLS Gen2 storage container and catalog/schema names.
+* The storage account (`databrickscygnusete`) and catalog (`databricks_cata`) names are written directly in each notebook in `notebooks/Notebook_Files/`; replace them with yours. `parameters.ipynb` lists the datasets the Bronze step loops over.
 
 **3. Data Ingestion:**
 
-* Upload the files from the sample_data directory to your designated source location in ADLS Gen2.
+* Upload the `*_first` files from the sample_data directory into folders named `orders`, `customers` and `products` in the `source` container, and the `*_second` files after the first run, to see the incremental load. `regions.parquet` is loaded separately, as the table `databricks_cata.bronze.regions`.
 
 **4. Execution:**
 
-* Execute the notebooks manually in order to materialize the tables for the first time.
+* Execute the notebooks manually in order to materialize the tables for the first time, with `init_load_flag` set to 1 in Gold_Customers (0 on later runs). Gold_Products is a Delta Live Tables pipeline: create a pipeline from it instead of running it as a notebook. After that, the Databricks Job runs the whole workflow in order.
