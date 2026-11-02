@@ -146,4 +146,4 @@ Here are some snapshots of the key components of the project running in Databric
 
 **4. Execution:**
 
-* Execute the notebooks manually in order to materialize the tables for the first time, with `init_load_flag` set to 1 in Gold_Customers (0 on later runs). Gold_Products is a Delta Live Tables pipeline: create a pipeline from it instead of running it as a notebook. After that, the Databricks Job runs the whole workflow in order.
+* Execute the notebooks manually in order to materialize the tables for the first time, with `init_load_flag` set to 1 in Gold_Customers (0 on later runs). Gold_Products is a Delta Live Tables pipeline: Create a pipeline from it instead of running it as a notebook. After that, the Databricks Job runs the whole workflow in order.
